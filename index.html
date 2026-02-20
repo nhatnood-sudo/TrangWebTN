@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kho Lưu Trữ - Universe Final</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- NỀN VŨ TRỤ SAO RƠI --- */
+        .stars-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+        }
+
+        .stars {
+            width: 2px; height: 2px; background: transparent;
+            box-shadow: 450px 240px #FFF, 120px 300px #FFF, 780px 500px #FFF, 1500px 200px #FFF, 300px 800px #FFF, 1200px 100px #FFF, 900px 700px #FFF, 200px 100px #FFF, 600px 400px #FFF, 1100px 900px #FFF, 1400px 600px #FFF, 50px 500px #FFF, 1600px 800px #FFF, 400px 200px #FFF, 800px 100px #FFF, 1000px 400px #FFF, 1300px 300px #FFF, 250px 750px #FFF, 550px 850px #FFF, 950px 150px #FFF;
+            animation: starDrift 100s linear infinite;
+        }
+
+        @keyframes starDrift {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-2000px); }
+        }
+
+        /* --- NHẠC NỀN --- */
+        #music-info {
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+            border: 1px solid rgba(255, 255, 255, 0.3); padding: 8px 15px; border-radius: 4px;
+            font-size: 12px; letter-spacing: 2px; color: #fff; background: rgba(255, 255, 255, 0.05);
+            text-transform: uppercase; z-index: 5; width: 250px; text-align: center;
+            overflow: hidden; white-space: nowrap;
+        }
+
+        /* --- CAROUSEL THƯ MỤC --- */
+        .carousel-container { display: flex; align-items: center; gap: 60px; z-index: 10; }
+        .folder-viewport { width: 280px; height: 320px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .folder-wrapper { text-align: center; cursor: pointer; position: absolute; transition: all 0.4s ease; }
+        .file-icon { width: 200px; height: 200px; fill: white; filter: drop-shadow(0 0 15px rgba(255,255,255,0.4)); }
+        .folder-label { margin-top: 15px; font-size: 24px; font-weight: 300; letter-spacing: 5px; }
+        .arrow-btn { background: none; border: none; color: #fff; font-size: 60px; cursor: pointer; opacity: 0.3; transition: 0.3s; padding: 20px; }
+        .arrow-btn:hover { opacity: 1; transform: scale(1.2); }
+
+        /* --- MODAL NỘI DUNG --- */
+        #content-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        .modal-box { width: 85%; max-width: 700px; height: 60%; border-left: 1px solid #fff; padding: 30px; overflow-y: auto; line-height: 1.6; }
+        .close-btn { margin-top: 20px; padding: 10px 30px; background: none; color: #fff; border: 1px solid #fff; cursor: pointer; letter-spacing: 2px; }
+
+        /* --- MÀN HÌNH BẮT ĐẦU --- */
+        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; cursor: pointer; }
+
+        /* --- XOAY MÀN HÌNH --- */
+        #landscape-warning { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        @media screen and (max-width: 850px) and (orientation: portrait) { #landscape-warning { display: flex; } }
+
+        /* --- HỆ THỐNG CHAT TỰ ĐỘNG (THEO YÊU CẦU) --- */
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .chat-msg {
+            background-color: #ffffff;
+            color: #000000;
+            padding: 12px 18px;
+            border-radius: 18px;
+            border-bottom-right-radius: 2px;
+            max-width: 300px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            /* Hiệu ứng bay từ dưới giữa màn hình lên góc phải sát viền */
+            animation: flyInChat 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes flyInChat {
+            0% {
+                transform: translate(-45vw, 200px) scale(0.5);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .fade-out {
+            animation: fadeAway 5s forwards;
+        }
+
+        @keyframes fadeAway {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.9) translateY(-10px); }
+        }
+
+        /* Animations Slide Folder */
+        .slide-out-left { animation: slideOutLeft 0.5s forwards; }
+        .slide-in-right { animation: slideInRight 0.5s forwards; }
+        @keyframes slideOutLeft { to { transform: translateX(-150%); opacity: 0; } }
+        @keyframes slideInRight { from { transform: translateX(150%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="landscape-warning">
+        <h2 style="font-weight: 300;">Vui lòng xoay ngang điện thoại</h2>
+        <p style="opacity: 0.6;">Để có trải nghiệm tốt nhất dành cho bé yêu ❤️</p>
+    </div>
+
+    <div id="chat-container"></div>
+
+    <div class="stars-container"><div class="stars"></div></div>
+
+    <div id="start-overlay" onclick="startSite()">
+        <h1 style="font-weight: 100; letter-spacing: 10px;">ENTER</h1>
+        <p style="font-size: 12px; opacity: 0.5;">Khởi hành vào không gian của bé Như</p>
+    </div>
+
+    <div id="music-info">Đang tải nhạc...</div>
+    <audio id="music-player" loop></audio>
+
+    <div class="carousel-container">
+        <button class="arrow-btn" onclick="moveFolder(-1)">&#8249;</button> 
+        <div class="folder-viewport">
+            <div class="folder-wrapper" id="folder-display" onclick="openFolder()">
+                <svg class="file-icon" viewBox="0 0 24 24">
+                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                </svg>
+                <span class="folder-label" id="folder-name">01</span>
+            </div>
+        </div>
+        <button class="arrow-btn" onclick="moveFolder(1)">&#8250;</button> 
+    </div>
+
+    <div id="content-modal">
+        <h2 id="modal-title" style="font-weight: 100; letter-spacing: 5px;"></h2>
+        <div class="modal-box" id="modal-body"></div>
+        <button class="close-btn" onclick="closeFolder()">QUAY LẠI</button>
+    </div>
+
+    <script>
+        // --- 1. CẤU HÌNH NHẠC & NỘI DUNG ---
+        const playlist = [
+            { name: "Beautiful in White", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" } // Thay bằng link nhạc của bạn
+        ];
+
+        const contents = {
+            1: `<h3>Anh và em</h3><p>Chào em bé của anh, hiện tại đang là ngày 20/02/2026...</p><p>Trang web này anh viết riêng cho em, để em thấy tình yêu của anh luôn hiện hữu ở đây.</p>`,
+            2: `<h3>Mục số 02</h3><p>Nơi lưu giữ những kỷ niệm bí mật của chúng mình.</p>`,
+            3: `<h3>Mục số 03</h3><p>Anh yêu em nhiều lắm!</p>`
+        };
+
+        // --- 2. KỊCH BẢN CHAT TỰ ĐỘNG ---
+        const chatScripts = {
+            1: [
+                { delay: 60000, text: "Thấy web anh làm hay hem kk" }, 
+                { delay: 70000, text: "kk đừng bất ngờ quá anh không đang chat trực tiếp với em đâu đây chỉ những câu a viết sẵn để hướng dẫn em và trông nom cô bé của anh hehe" },
+                { delay: 76000, text: "Đọc vui nha baby:33" },
+                { delay: 83000, text: "yêu yêu hehe" }
+            ],
+            2: [
+                { delay: 5000, text: "Em đang xem mục 2 đó hả?" } // Code sẵn cho bạn tự viết sau này
+            ]
+        };
+
+        // --- 3. LOGIC XỬ LÝ ---
+        let currentIndex = 1;
+        const totalFolders = 3;
+        const player = document.getElementById('music-player');
+        let triggeredFolders = {}; // Đảm bảo chat chỉ chạy 1 lần khi nhấn vào mục đó
+
+        function moveFolder(direction) {
+            currentIndex += direction;
+            if (currentIndex > totalFolders) currentIndex = 1;
+            if (currentIndex < 1) currentIndex = totalFolders;
+            document.getElementById('folder-name').innerText = currentIndex < 10 ? "0" + currentIndex : currentIndex;
+            
+            // Hiệu ứng lướt nhẹ
+            const display = document.getElementById('folder-display');
+            display.style.opacity = '0';
+            setTimeout(() => { display.style.opacity = '1'; }, 200);
+        }
+
+        function openFolder() {
+            const content = contents[currentIndex] || "Nội dung đang cập nhật...";
+            document.getElementById('modal-title').innerText = "THƯ MỤC " + (currentIndex < 10 ? "0"+currentIndex : currentIndex);
+            document.getElementById('modal-body').innerHTML = content;
+            document.getElementById('content-modal').style.display = 'flex';
+
+            // KÍCH HOẠT CHAT CHẠY NGẦM (Nếu chưa từng kích hoạt mục này)
+            if (!triggeredFolders[currentIndex]) {
+                startChatSequence(currentIndex);
+                triggeredFolders[currentIndex] = true;
+            }
+        }
+
+        function closeFolder() {
+            document.getElementById('content-modal').style.display = 'none';
+        }
+
+        function startChatSequence(index) {
+            const script = chatScripts[index];
+            if (!script) return;
+
+            script.forEach(msg => {
+                setTimeout(() => {
+                    createChatBubble(msg.text);
+                }, msg.delay);
+            });
+        }
+
+        function createChatBubble(text) {
+            const container = document.getElementById('chat-container');
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-msg';
+            bubble.innerText = text;
+            container.appendChild(bubble);
+
+            // Tồn tại 2 phút (120,000ms), sau đó tan biến 5s
+            setTimeout(() => {
+                bubble.classList.add('fade-out');
+                setTimeout(() => { bubble.remove(); }, 5000);
+            }, 120000);
+        }
+
+        function startSite() {
+            document.getElementById('start-overlay').style.display = 'none';
+            
+            // Chơi nhạc
+            player.src = playlist[0].url;
+            document.getElementById('music-info').innerText = "Playing: " + playlist[0].name;
+            player.play();
+
+            // Fullscreen & Lock Landscape (Dành cho điện thoại)
+            try {
+                const doc = document.documentElement;
+                if (doc.requestFullscreen) doc.requestFullscreen();
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (err) {}
+        }
+    </script>
+</body>
+</html>
